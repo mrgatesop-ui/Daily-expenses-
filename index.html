@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panda Wallet</title>
+    <style>
+        :root { --pink: #ff2b85; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 50px; }
+        
+        /* Balance Card */
+        .balance-card { background: linear-gradient(135deg, #ff2b85, #ff5e3a); padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(255, 43, 133, 0.2); }
+        .balance-val { font-size: 32px; font-weight: 800; display: block; }
+        
+        /* Input Section */
+        .input-group { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        input { width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; }
+        .btn-earn { background: #2ecc71; }
+        .btn-spend { background: #e74c3c; }
+        .btn-clear { background: #444; margin-top: 15px; width: 100%; opacity: 0.6; font-size: 12px; }
+
+        /* History List */
+        .history-title { font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .history-item { background: var(--card); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #444; }
+        .item-info { display: flex; flex-direction: column; }
+        .item-desc { font-weight: 600; font-size: 15px; }
+        .item-date { font-size: 11px; color: #888; margin-top: 2px; }
+        .item-amt { font-weight: 700; font-size: 16px; }
+        
+        .pos { border-left-color: #2ecc71; }
+        .pos .item-amt { color: #2ecc71; }
+        .neg { border-left-color: #e74c3c; }
+        .neg .item-amt { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+    <div style="font-weight:900; color:var(--pink); margin-bottom:15px; letter-spacing:1px;">PANDA WALLET 🇰🇭</div>
+
+    <div class="balance-card">
+        <span style="font-size:12px; opacity:0.8; font-weight:600;">TOTAL PROFIT</span>
+        <span class="balance-val" id="totalBalance">$0.00</span>
+    </div>
+
+    <div class="input-group">
+        <input type="number" id="amount" placeholder="Amount (e.g. 3.10)" step="0.01">
+        <input type="text" id="desc" placeholder="Note (Gas, Foodpanda Pay, Coffee)">
+        <div class="btn-row">
+            <button class="btn-earn" onclick="addEntry('earn')">ADD EARNING</button>
+            <button class="btn-spend" onclick="addEntry('spend')">ADD EXPENSE</button>
+        </div>
+        <button class="btn-clear" onclick="clearData()">RESET DATA</button>
+    </div>
+
+    <div class="history-title">
+        <span>RECENT HISTORY</span>
+        <span id="itemCount" style="font-size:12px; color:#888;">0 items</span>
+    </div>
+    
+    <div id="historyList" class="history-list">
+        </div>
+
+    <script>
+        // Load data from iPhone Local Storage
+        let data = JSON.parse(localStorage.getItem('riderWalletData')) || { balance: 0, logs: [] };
+
+        function updateUI() {
+            document.getElementById('totalBalance').innerText = `$${data.balance.toFixed(2)}`;
+            document.getElementById('itemCount').innerText = `${data.logs.length} items`;
+            
+            const list = document.getElementById('historyList');
+            list.innerHTML = data.logs.slice().reverse().map(log => `
+                <div class="history-item ${log.type === 'earn' ? 'pos' : 'neg'}">
+                    <div class="item-info">
+                        <span class="item-desc">${log.desc}</span>
+                        <span class="item-date">${log.date}</span>
+                    </div>
+                    <span class="item-amt">${log.type === 'earn' ? '+' : '-'}$${log.amt.toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            // Save to Local Storage
+            localStorage.setItem('riderWalletData', JSON.stringify(data));
+        }
+
+        function addEntry(type) {
+            const amtInput = document.getElementById('amount');
+            const descInput = document.getElementById('desc');
+            const amt = parseFloat(amtInput.value);
+            const desc = descInput.value || (type === 'earn' ? 'Delivery Pay' : 'Expense');
+            const date = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' | ' + new Date().toLocaleDateString();
+
+            if (isNaN(amt) || amt <= 0) return;
+
+            if (type === 'earn') data.balance += amt;
+            else data.balance -= amt;
+
+            data.logs.push({ type, amt, desc, date });
+            
+            // Clear inputs
+            amtInput.value = '';
+            descInput.value = '';
+            updateUI();
+        }
+
+        function clearData() {
+            if (confirm("This will delete all your history. Are you sure?")) {
+                data = { balance: 0, logs: [] };
+                updateUI();
+            }
+        }
+
+        // Initialize UI on load
+        updateUI();
+    </script>
+</body>
+</html>
